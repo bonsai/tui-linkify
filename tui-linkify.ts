@@ -3,10 +3,11 @@
 // OSC 8 hyperlinks. The TUI app itself is left untouched, so one tool covers pi,
 // opencode, and anything else that runs in the terminal.
 //
-//   WSL/Linux path      /home/sexy/x.md      -> file://wsl.localhost/<distro>/home/sexy/x.md
+//   WSL/Linux path      /home/sexy/x.md      -> tui-linkify://open?k=posix&p=%2Fhome%2Fsexy%2Fx.md&d=<distro>
+//                                              (--scheme file -> file://wsl.localhost/<distro>/home/sexy/x.md)
 //   home path           ~/.pi/agent/x.md    -> expanded before linking
 //   with line/col       /home/sexy/x.ts:12:3 -> link keeps the display text, URI drops :12:3
-//   Windows path        C:\Users\dance\x.txt -> file:///C:/Users/dance/x.txt
+//   Windows path        C:\Users\dance\x.txt -> tui-linkify://open?k=win&p=C%3A%5CUsers%5Cdance%5Cx.txt
 //   UNC path            \\wsl.localhost\Ubuntu-24.04\home\sexy\x.md -> file://wsl.localhost/...
 //   bare URL            https://example.com/x -> linked to itself
 //   existing OSC 8 from the app is never nested
@@ -14,6 +15,8 @@
 // usage: tui-linkify [--host HOST] [--no-exists] [--min-segments N] [--hold ms] -- <cmd> [args...]
 //
 // env:
+//   TUI_LINKIFY_SCHEME      "tui-linkify" (default) or "file"
+//   TUI_LINKIFY_DISTRO      WSL distro name for ?d= (default: $WSL_DISTRO_NAME)
 //   TUI_LINKIFY_HOST        URI authority for WSL/Linux paths (empty string = plain file:///)
 //                           default: wsl.localhost/$WSL_DISTRO_NAME when running under WSL
 //   TUI_LINKIFY_NOEXISTS=1  skip the on-disk existence check (link everything that looks like a path)
@@ -28,6 +31,8 @@ const opts = {
   exists: !process.env.TUI_LINKIFY_NOEXISTS,
   minSegments: 2,
   hold: 15,
+  scheme: process.env.TUI_LINKIFY_SCHEME ?? "tui-linkify",
+  distro: process.env.TUI_LINKIFY_DISTRO ?? process.env.WSL_DISTRO_NAME ?? "",
   debug: process.env.TUI_LINKIFY_DEBUG === "1",
 };
 const cmd: string[] = [];
@@ -38,6 +43,8 @@ for (let i = 0; i < argv.length; i++) {
   if (a === "--no-exists") { opts.exists = false; continue; }
   if (a === "--min-segments") { opts.minSegments = Number(argv[++i] ?? 2); continue; }
   if (a === "--hold") { opts.hold = Number(argv[++i] ?? 15); continue; }
+  if (a === "--scheme") { opts.scheme = argv[++i] ?? "tui-linkify"; continue; }
+  if (a === "--distro") { opts.distro = argv[++i] ?? ""; continue; }
   cmd.push(a);
 }
 if (cmd.length === 0) {
@@ -86,12 +93,16 @@ function localPath(kind: "posix" | "win" | "unc", raw: string): string | undefin
 }
 
 function uri(kind: "posix" | "win" | "unc", raw: string): string | undefined {
-  if (kind === "posix") {
-    const p = raw.startsWith("~") ? HOME + raw.slice(1) : raw;
-    return opts.host ? `file://${opts.host}${enc(p.replace(/^\//, "/"))}` : `file://${enc(p)}`;
+  const target = kind === "posix" && raw.startsWith("~") ? HOME + raw.slice(1) : raw;
+  if (opts.scheme !== "file") {
+    const d = kind === "posix" && opts.distro ? `&d=${encodeURIComponent(opts.distro)}` : "";
+    return `tui-linkify://open?k=${kind}&p=${encodeURIComponent(target)}${d}`;
   }
-  if (kind === "win") return `file:///${enc(raw.replace(/\\/g, "/").replace(/^([A-Za-z]):/, "$1:"))}`;
-  const m = /^\\\\([^\\]+)\\(.*)$/.exec(raw);
+  if (kind === "posix") {
+    return opts.host ? `file://${opts.host}${enc(target.replace(/^\//, "/"))}` : `file://${enc(target)}`;
+  }
+  if (kind === "win") return `file:///${enc(target.replace(/\\/g, "/"))}`;
+  const m = /^\\\\([^\\]+)\\(.*)$/.exec(target);
   if (!m) return undefined;
   return `file://${m[1]}${enc("/" + m[2].replace(/\\/g, "/"))}`;
 }
