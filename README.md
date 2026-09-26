@@ -207,7 +207,7 @@ WSL パスはハンドラが `\\wsl.localhost\<distro>\home\...` に変換して
 | `bash -c` / non-login | 同上（shim が `bun` を絶対パスで保持） | 自動 |
 | `~/.local/bin/opencode` 等の既存ラッパー | shim が pin して呼ぶ | 自動 |
 | herdr / tmux のペイン | 各ペインが shim を叩く | 追加作業なし |
-| Windows PowerShell ランチャー（`wsl -e bash -c`） | ランチャー内のコマンドを shim の絶対パスに変更 | 下記 |
+| Windows PowerShell ランチャー（`wsl -e bash -c`） | ランチャー内のコマンドを shim の絶対パスに変更 | **適用済み**（`bonsai/opencode-launcher-win` の .ps1 / .cmd） |
 | Windows 版 opencode（`.cmd`） | Windows 側 `.cmd` shim から `bun` で tui-linkify.ts を起動 | 下記 |
 
 `wsl -e bash -c "opencode ..."` は **PATH を通らない**（非対話なので `~/.profile` も `~/.bashrc.d` も読まれない）。ランチャー側を絶対パスにする:
@@ -218,6 +218,10 @@ WSL パスはハンドラが `\\wsl.localhost\<distro>\home\...` に変換して
 ```
 
 ## ランチャ（PowerShell）経由
+
+`bonsai/opencode-launcher-win` は適用済み（`.ps1` / `.cmd` の WSL 分岐が shim の絶対パスを呼ぶ）。実測: `wsl -e bash -c ".../opencode --version"` → 1.18.32。
+
+他ランチャーを足す場合は同じ形にする:
 
 ```powershell
 # opencode-launcher.ps1（WSL 分岐）
