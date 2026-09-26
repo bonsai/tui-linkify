@@ -1,5 +1,6 @@
 #!/bin/sh
-# tui-linkify installer — wires the PTY linkifier in front of pi / opencode for
+# tui-linkify — MIT License (c) 2026 bonsai
+# installer — wires the PTY linkifier in front of pi / opencode for
 # every launch path we know about.
 #
 #   install.sh                 dry run (prints what would change)

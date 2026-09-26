@@ -1,3 +1,4 @@
+# tui-linkify — MIT License (c) 2026 bonsai
 # install.ps1 — register the `tui-linkify://` protocol handler on Windows.
 #
 #   powershell -NoProfile -File install.ps1 -DryRun            # show the plan

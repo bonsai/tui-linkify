@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+// tui-linkify — MIT License (c) 2026 bonsai
 // tui-linkify — PTY proxy that turns paths and bare URLs in terminal output into
 // OSC 8 hyperlinks. The TUI app itself is left untouched, so one tool covers pi,
 // opencode, and anything else that runs in the terminal.
